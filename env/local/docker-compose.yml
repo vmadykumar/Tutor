@@ -1,0 +1,190 @@
+version: "3.7"
+services:
+
+  ############# External services
+
+  
+  memcached:
+    image: docker.io/memcached:1.4.38
+    restart: unless-stopped
+  
+
+  
+  mongodb:
+    image: docker.io/mongo:3.2.16
+    # Use WiredTiger in all environments, just like at edx.org
+    command: mongod --smallfiles --nojournal --storageEngine wiredTiger
+    restart: unless-stopped
+    volumes:
+      - ../../data/mongodb:/data/db
+  
+
+  mysql:
+    image: docker.io/mysql:5.6.36
+    
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci
+    
+    restart: unless-stopped
+    volumes:
+      - ../../data/mysql:/var/lib/mysql
+    env_file: ../apps/mysql/auth.env
+
+  
+  elasticsearch:
+    image: docker.io/elasticsearch:1.5.2
+    environment:
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "cluster.name=openedx"
+      - "bootstrap.memory_lock=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+    volumes:
+      - ../../data/elasticsearch:/usr/share/elasticsearch/data
+  
+
+  openedx-assets:
+    image: docker.io/overhangio/openedx:3.11.3
+    volumes:
+      - ../../data/openedx:/var/www/openedx
+    command: sh -c "rm -rf /var/www/openedx/staticfiles && cp -r /openedx/staticfiles/ /var/www/openedx/"
+
+  nginx:
+    image: docker.io/nginx:1.13
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      default:
+        aliases: []
+    volumes:
+      - ../apps/nginx:/etc/nginx/conf.d/:ro
+      - ../../data/openedx:/var/www/openedx:ro
+      - ../../data/openedx-media:/var/www/openedx-media:ro
+      
+      
+    depends_on: ["lms", "cms"]
+
+  
+  rabbitmq:
+    image: docker.io/rabbitmq:3.6.10
+    volumes:
+      - ../../data/rabbitmq:/var/lib/rabbitmq
+    restart: unless-stopped
+  
+
+  
+  smtp:
+    image: docker.io/namshi/smtp:latest
+    restart: unless-stopped
+  
+
+  ############# Forum
+
+  
+  forum:
+    image: docker.io/overhangio/openedx-forum:3.11.3
+    environment:
+      SEARCH_SERVER: "http://elasticsearch:9200"
+      MONGODB_AUTH: ""
+      MONGODB_HOST: "mongodb"
+      MONGODB_PORT: "27017"
+    restart: unless-stopped
+    depends_on: ["elasticsearch", "mongodb"]
+  
+
+  ############# LMS and CMS
+
+  
+  lms:
+    image: docker.io/overhangio/openedx:3.11.3
+    environment:
+      SERVICE_VARIANT: lms
+      GUNICORN_WORKERS: 2
+      SETTINGS: ${EDX_PLATFORM_SETTINGS:-tutor.production}
+    restart: unless-stopped
+    volumes:
+      - ../apps/openedx/settings/lms/:/openedx/edx-platform/lms/envs/tutor/
+      - ../apps/openedx/settings/cms/:/openedx/edx-platform/cms/envs/tutor/
+      - ../apps/openedx/config/:/openedx/config/
+      - ../../data/lms:/openedx/data
+      - ../../data/openedx-media:/openedx/media
+    depends_on:
+      - mysql
+      - elasticsearch
+      - forum
+      - memcached
+      - mongodb
+      - rabbitmq
+      - smtp
+      
+  
+
+  
+  cms:
+    image: docker.io/overhangio/openedx:3.11.3
+    environment:
+      SERVICE_VARIANT: cms
+      GUNICORN_WORKERS: 2
+      SETTINGS: ${EDX_PLATFORM_SETTINGS:-tutor.production}
+    restart: unless-stopped
+    volumes:
+      - ../apps/openedx/settings/lms/:/openedx/edx-platform/lms/envs/tutor/
+      - ../apps/openedx/settings/cms/:/openedx/edx-platform/cms/envs/tutor/
+      - ../apps/openedx/config/:/openedx/config/
+      - ../../data/cms:/openedx/data
+      - ../../data/openedx-media:/openedx/media
+    depends_on:
+      - mysql
+      - elasticsearch
+      - memcached
+      - mongodb
+      - rabbitmq
+      - smtp
+      
+  
+
+  ############# LMS and CMS workers
+
+  
+  lms_worker:
+    image: docker.io/overhangio/openedx:3.11.3
+    environment:
+      SERVICE_VARIANT: lms
+      SETTINGS: ${EDX_PLATFORM_SETTINGS:-tutor.production}
+      C_FORCE_ROOT: "1" # run celery tasks as root #nofear
+    command: ./manage.py lms celery worker --loglevel=info --hostname=edx.lms.core.default.%%h --maxtasksperchild 100
+    restart: unless-stopped
+    volumes:
+      - ../apps/openedx/settings/lms/:/openedx/edx-platform/lms/envs/tutor/
+      - ../apps/openedx/settings/cms/:/openedx/edx-platform/cms/envs/tutor/
+      - ../apps/openedx/config/:/openedx/config/
+      - ../../data/lms:/openedx/data
+      - ../../data/openedx-media:/openedx/media
+    depends_on:
+      - lms
+  
+
+  
+  cms_worker:
+    image: docker.io/overhangio/openedx:3.11.3
+    environment:
+      SERVICE_VARIANT: cms
+      SETTINGS: ${EDX_PLATFORM_SETTINGS:-tutor.production}
+      C_FORCE_ROOT: "1" # run celery tasks as root #nofear
+    command: ./manage.py cms celery worker --loglevel=info --hostname=edx.cms.core.default.%%h --maxtasksperchild 100
+    restart: unless-stopped
+    volumes:
+      - ../apps/openedx/settings/lms/:/openedx/edx-platform/lms/envs/tutor/
+      - ../apps/openedx/settings/cms/:/openedx/edx-platform/cms/envs/tutor/
+      - ../apps/openedx/config/:/openedx/config/
+      - ../../data/cms:/openedx/data
+      - ../../data/openedx-media:/openedx/media
+    depends_on:
+      - cms
+  
+
+  

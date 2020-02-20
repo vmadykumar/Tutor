@@ -1,0 +1,6 @@
+API_HOST_URL: 'http://uat-lms.pratian.com'
+ENVIRONMENT_DISPLAY_NAME: 'tutor'
+PLATFORM_NAME: 'EDX'
+PLATFORM_DESTINATION_NAME: 'uat-lms.pratian.com'
+FEEDBACK_EMAIL_ADDRESS: 'support@uat-lms.pratian.com'
+OAUTH_CLIENT_ID: 'android'
