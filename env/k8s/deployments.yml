@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: cms
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: cms
@@ -50,6 +51,7 @@ metadata:
   labels:
     app.kubernetes.io/name: cms-worker
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: cms-worker
@@ -93,6 +95,7 @@ metadata:
   labels:
     app.kubernetes.io/name: forum
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: forum
@@ -124,6 +127,7 @@ metadata:
   labels:
     app.kubernetes.io/name: lms
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: lms
@@ -158,13 +162,14 @@ spec:
           configMap:
             name: openedx-config
 ---
-apiVersion: apps/v1
+apiVersion: apps/v1 
 kind: Deployment
 metadata:
   name: lms-worker
   labels:
     app.kubernetes.io/name: lms-worker
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: lms-worker
@@ -208,6 +213,7 @@ metadata:
   labels:
     app.kubernetes.io/name: elasticearch
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: elasticsearch
@@ -247,6 +253,7 @@ metadata:
   labels:
     app.kubernetes.io/name: memcached
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: memcached
@@ -270,6 +277,7 @@ metadata:
   labels:
     app.kubernetes.io/name: mongodb
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: mongodb
@@ -303,6 +311,7 @@ metadata:
   labels:
     app.kubernetes.io/name: mysql
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: mysql
@@ -345,6 +354,7 @@ metadata:
   labels:
     app.kubernetes.io/name: smtp
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: smtp
@@ -367,6 +377,7 @@ metadata:
   labels:
     app.kubernetes.io/name: nginx
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: nginx
@@ -428,6 +439,7 @@ metadata:
   labels:
     app.kubernetes.io/name: rabbitmq
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: rabbitmq
